@@ -1,52 +1,87 @@
-*Detailed instructions on how to contribute to the project, if applicable. Must include section about Oracle Contributor Agreement with link and instructions*
+# Contributing to the Oracle NoSQL Database Cloud Service Rust SDK
 
-# Contributing to this repository
+*Copyright (c) 2019, 2024 Oracle and/or its affiliates. All rights reserved.*
 
-We welcome your contributions! There are multiple ways to contribute.
+The target readers of this document are those who want to contribute to the
+Oracle NoSQL Database Rust SDK project, including but not limited to contributing
+to the source code, examples, tests and documents.
 
-## Opening issues
+## Before contributing
 
-For bugs or enhancement requests, please file a GitHub issue unless it's
-security related. When filing a bug remember that the better written the bug is,
-the more likely it is to be fixed. If you think you've found a security
-vulnerability, do not raise a GitHub issue and follow the instructions in our
-[security policy](./SECURITY.md).
+### Sign the OCA
 
-## Contributing code
+Before you become a contributor, please read and sign
+[Oracle Contributor Agreement][OCA](OCA),
+see [Contributing](https://github.com/oracle/nosql-rust-sdk/blob/master/CONTRIBUTING.md)
+for more details.
 
-We welcome your code contributions. Before submitting code via a pull request,
-you will need to have signed the [Oracle Contributor Agreement][OCA] (OCA) and
-your commits need to include the following line using the name and e-mail
-address you used to sign the OCA:
+After you signed the OCA, make sure that your Git tool is configured to create
+commits using the name and e-mail address you used to sign the OCA:
+You can configure Git globally (or locally as you prefer) with the commands:
+```bash
+git config --global user.email you@example.com
+git config --global user.name YourName
+```
 
-```text
+### Check the issue tracker
+
+When you find any issues with the Rust SDK or want to propose a change, please
+check the [Issues](https://github.com/oracle/nosql-rust-sdk/issues) page
+first, this helps prevent duplication of effort. If the issue is already being
+tracked, feel free to participate in the discussion.
+
+### Opening issues
+
+If you find an issue that is not tracked in the [Issues](https://github.com/oracle/nosql-rust-sdk/issues)
+page, feel free to open a new one, describe the issue, discuss your plans or
+proposed changes.
+All contributions should be connected to an issue except for the trivial changes.
+
+## Contributing Code
+
+Follow the [Github Flow](https://guides.github.com/introduction/flow/) when you
+work on a change for Rust SDK.
+
+Before you open a pull request, make sure:
+- Add unit tests for the code changes you made.
+- Use `cargo fmt` to format the code.
+- Run all tests.
+  - It is important to run all tests and make sure they pass with both the
+Oracle NoSQL Cloud Simulator and the Oracle NoSQL Database (on-premise).
+If you have a subscription to the Oracle NoSQL Database Cloud Service, it would
+be great if you can run the tests with the Cloud Service as well.
+
+## Run Tests
+
+### Run tests with the Oracle NoSQL Cloud Simulator
+
+### Run tests with Oracle NoSQL Database on-premise
+
+## Run Examples
+
+See the [Examples](https://github.com/oracle/nosql-rust-sdk#examples) section.
+
+## Pull Request Process
+
+Pull requests can be made under
+[Oracle Contributor Agreement][OCA](OCA).
+
+For pull requests to be accepted, the bottom of
+your commit message must have the following line using your name and
+e-mail address as it appears in the OCA Signatories list.
+
+```
 Signed-off-by: Your Name <you@example.org>
 ```
 
-This can be automatically added to pull requests by committing with `--sign-off`
-or `-s`, e.g.
+This can be automatically added to pull requests by committing with:
 
-```text
+```
 git commit --signoff
 ```
 
-Only pull requests from committers that can be verified as having signed the OCA
-can be accepted.
-
-## Pull request process
-
-1. Ensure there is an issue created to track and discuss the fix or enhancement
-   you intend to submit.
-1. Fork this repository.
-1. Create a branch in your fork to implement the changes. We recommend using
-   the issue number as part of your branch name, e.g. `1234-fixes`.
-1. Ensure that any documentation is updated with the changes that are required
-   by your change.
-1. Ensure that any samples are updated if the base image has been changed.
-1. Submit the pull request. *Do not leave the pull request blank*. Explain exactly
-   what your changes are meant to do and provide simple steps on how to validate.
-   your changes. Ensure that you reference the issue you created as well.
-1. We will assign the pull request to 2-3 people for review before it is merged.
+Only pull requests from committers that can be verified as having
+signed the OCA can be accepted.
 
 ## Code of conduct
 

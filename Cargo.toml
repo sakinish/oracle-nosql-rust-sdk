@@ -1,0 +1,45 @@
+[package]
+name = "oracle-nosql-rust-sdk"
+version = "0.1.0"
+rust-version = "1.78"
+license = "UPL-1.0"
+description = "Oracle Rust SDK for the NoSQL Database"
+keywords = ["nosql", "oracle", "database"]
+readme = "README.md"
+authors = ["John Connelly <john.connelly@oracle.com>"]
+# this is the cargo version, not this crate version
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.12.0", features = ["json", "cookies"] }
+tokio = { version = "1.40.0", features = ["rt", "time", "macros", "test-util"] }
+chrono = { version = "0.4.38", features = ["alloc", "std"] }
+base64 = "0.22.0"
+tracing = "0.1.40"
+url = "2.5.2"
+num_enum = "0.7.1"
+serde = "1.0.200"
+serde_derive = "1.0.200"
+dirs = "5.0.1"
+serde_json = { version = "1.0.128", features = ["arbitrary_precision"] }
+bigdecimal = "0.4.5"
+derive_builder = { version = "0.20.0" }
+oracle-nosql-rust-sdk-derive = { path = "oracle-nosql-rust-sdk-derive" }
+async-recursion = "1.1.1"
+openssl =  { version = "0.10.66", features = ["vendored"] }
+base64ct = { version = "1.6.0", features = ["alloc", "std"] }
+bytes = "1.5.0"
+rust-ini = "0.21.0"
+
+[dev-dependencies]
+tokio = { version = "1.40.0", features = ["rt-multi-thread"] }
+env_logger = "0.11.0"
+tempfile = "3.7.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+rand = "0.8"
+
+[build-dependencies]
+rustc_version = "0.4"
+

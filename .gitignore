@@ -1,0 +1,4 @@
+/target
+/Cargo.lock
+.vscode/settings.json
+/oracle-nosql-rust-sdk-derive/Cargo.lock

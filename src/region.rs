@@ -1,0 +1,659 @@
+//
+// Copyright (c) 2024 Oracle and/or its affiliates. All rights reserved.
+//
+// Licensed under the Universal Permissive License v 1.0 as shown at
+//  https://oss.oracle.com/licenses/upl/
+//
+use serde_derive::Deserialize;
+use std::env;
+use std::result::Result;
+
+use crate::auth_common::file_utils::expand_user_home;
+use crate::error::{ia_err, NoSQLError};
+
+#[derive(Default, Debug, Clone, Deserialize)]
+pub struct Region {
+    // The main identifier string, e.g. "us-ashburn-1"
+    #[serde(rename = "regionIdentifier")]
+    id: String,
+    // Three-letter airport code, e.g. "iad"
+    #[serde(rename = "regionKey")]
+    key: String,
+    // Realm identifier, e.g. "oc1"
+    #[serde(rename = "realmKey")]
+    realm: String,
+    // Realm domain, e.g. "oraclecloud.com"
+    #[serde(rename = "realmDomainComponent")]
+    realm_domain: String,
+}
+
+pub fn string_to_region(id: &str) -> Result<Region, NoSQLError> {
+    // Note: this could be faster if we build a hash table, but it's
+    // expected that this will be called infrequently (typically once on startup).
+    let lower_id = id.to_lowercase();
+    for r in STATIC_REGIONS {
+        if r.id == lower_id {
+            return Ok(Region {
+                id: r.id.to_string(),
+                key: r.key.to_string(),
+                realm: r.realm.to_string(),
+                realm_domain: r.realm_domain.to_string(),
+            });
+        }
+    }
+
+    // check OCI_REGION_METADATA env information
+    if let Some(reg) = get_oci_region_metadata() {
+        if reg.id == lower_id {
+            return Ok(reg);
+        }
+    }
+
+    // try ~/.oci/regions-config.json data
+    if let Some(oci_regions) = get_oci_regions_list() {
+        for r in oci_regions {
+            if r.id == lower_id {
+                return Ok(r.clone());
+            }
+        }
+    }
+
+    // TODO: if enabled, try IMDS
+
+    ia_err!("no region found matching identifier '{}'", id)
+}
+
+impl Region {
+    pub fn nosql_endpoint(&self) -> String {
+        return format!("nosql.{}.oci.{}", self.id, self.realm_domain).to_string();
+    }
+    #[allow(dead_code)]
+    pub fn auth_endpoint(&self) -> String {
+        return format!("auth.{}.{}", self.id, self.realm_domain).to_string();
+    }
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> String {
+        format!(
+            "id={} key={} realm={} realmDomain={}",
+            self.id, self.key, self.realm, self.realm_domain
+        )
+    }
+}
+
+pub fn get_oci_region_metadata() -> Option<Region> {
+    let val = env::var("OCI_REGION_METADATA").ok()?;
+    let region: Region = serde_json::from_str(&val).ok()?;
+    Some(region)
+}
+
+pub fn get_oci_regions_list() -> Option<Vec<Region>> {
+    let json = file_to_string("~/.oci/regions-config.json").ok()?;
+    let regions: Vec<Region> = serde_json::from_str(&json).ok()?;
+    Some(regions)
+}
+
+pub(crate) fn file_to_string(filename: &str) -> Result<String, NoSQLError> {
+    let f = expand_user_home(filename);
+    match std::fs::read_to_string(&f) {
+        Ok(val) => {
+            return Ok(val);
+        }
+        Err(e) => {
+            return ia_err!("error reading file {}: {}", f, e.to_string());
+        }
+    }
+}
+
+#[test]
+fn test_region_lookup() -> Result<(), Box<dyn std::error::Error>> {
+    let _ = string_to_region("us-ashburn-1")?;
+    if string_to_region("us-foobar-1").is_ok() {
+        return Err("us-foobar-1 should have returned an error".into());
+    }
+    // set foobar into OCI_REGION_METADATA and verify it works
+    let eval = r#"{
+	"regionIdentifier": "us-foobar-1",
+	"regionKey": "foo",
+	"realmKey": "oc1",
+	"realmDomainComponent": "oraclecloud.com"
+	}"#;
+    std::env::set_var("OCI_REGION_METADATA", eval);
+    let _ = string_to_region("us-foobar-1")?;
+    std::env::remove_var("OCI_REGION_METADATA");
+    if string_to_region("us-foobar-1").is_ok() {
+        return Err("us-foobar-1 should have returned an error".into());
+    }
+
+    // create a ~/.oci/regions-config file, verify we can get us-foobar-1 from it
+    let path = expand_user_home("~/.oci");
+    // yes this leaves a vestage around if ~/.oci didn't already exist
+    let _ = std::fs::create_dir(path);
+    let path = expand_user_home("~/.oci/regions-config.json");
+    let rdata = r#"[
+	{
+	"regionIdentifier": "us-xxxxzzz-1",
+	"regionKey": "zzz",
+	"realmKey": "oc24",
+	"realmDomainComponent": "oraclecloud24.com"
+	},
+	{
+	"regionIdentifier": "us-foobar-1",
+	"regionKey": "foo",
+	"realmKey": "oc1",
+	"realmDomainComponent": "oraclecloud1.com"
+	}
+	]"#;
+    // TODO: if already there, swap
+    let _ = std::fs::write(&path, rdata);
+    let _ = string_to_region("us-foobar-1")?;
+    let _ = std::fs::remove_file(&path);
+    if string_to_region("us-foobar-1").is_ok() {
+        return Err("us-foobar-1 should have returned an error".into());
+    }
+
+    Ok(())
+}
+
+struct StaticRegion {
+    id: &'static str,
+    key: &'static str,
+    realm: &'static str,
+    realm_domain: &'static str,
+}
+
+// === Begin autogenerated regions ===
+const STATIC_REGIONS: [StaticRegion; 82] = [
+    StaticRegion {
+        id: "af-johannesburg-1",
+        key: "jnb",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-chuncheon-1",
+        key: "yny",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-hyderabad-1",
+        key: "hyd",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-melbourne-1",
+        key: "mel",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-mumbai-1",
+        key: "bom",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-osaka-1",
+        key: "kix",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-seoul-1",
+        key: "icn",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-singapore-1",
+        key: "sin",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-singapore-2",
+        key: "xsp",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-sydney-1",
+        key: "syd",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ap-tokyo-1",
+        key: "nrt",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ca-montreal-1",
+        key: "yul",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "ca-toronto-1",
+        key: "yyz",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-amsterdam-1",
+        key: "ams",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-frankfurt-1",
+        key: "fra",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-madrid-1",
+        key: "mad",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-marseille-1",
+        key: "mrs",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-milan-1",
+        key: "lin",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-paris-1",
+        key: "cdg",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-stockholm-1",
+        key: "arn",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "eu-zurich-1",
+        key: "zrh",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "il-jerusalem-1",
+        key: "mtz",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "me-abudhabi-1",
+        key: "auh",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "me-dubai-1",
+        key: "dxb",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "me-jeddah-1",
+        key: "jed",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "me-riyadh-1",
+        key: "ruh",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "mx-monterrey-1",
+        key: "mty",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "mx-queretaro-1",
+        key: "qro",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "sa-bogota-1",
+        key: "bog",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "sa-santiago-1",
+        key: "scl",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "sa-saopaulo-1",
+        key: "gru",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "sa-valparaiso-1",
+        key: "vap",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "sa-vinhedo-1",
+        key: "vcp",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "uk-london-1",
+        key: "lhr",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "uk-cardiff-1",
+        key: "cwl",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-phoenix-1",
+        key: "phx",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-ashburn-1",
+        key: "iad",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-saltlake-2",
+        key: "aga",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-sanjose-1",
+        key: "sjc",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-chicago-1",
+        key: "ord",
+        realm: "oc1",
+        realm_domain: "oraclecloud.com",
+    },
+    StaticRegion {
+        id: "us-langley-1",
+        key: "lfi",
+        realm: "oc2",
+        realm_domain: "oraclegovcloud.com",
+    },
+    StaticRegion {
+        id: "us-luke-1",
+        key: "luf",
+        realm: "oc2",
+        realm_domain: "oraclegovcloud.com",
+    },
+    StaticRegion {
+        id: "us-gov-ashburn-1",
+        key: "ric",
+        realm: "oc3",
+        realm_domain: "oraclegovcloud.com",
+    },
+    StaticRegion {
+        id: "us-gov-chicago-1",
+        key: "pia",
+        realm: "oc3",
+        realm_domain: "oraclegovcloud.com",
+    },
+    StaticRegion {
+        id: "us-gov-phoenix-1",
+        key: "tus",
+        realm: "oc3",
+        realm_domain: "oraclegovcloud.com",
+    },
+    StaticRegion {
+        id: "uk-gov-london-1",
+        key: "ltn",
+        realm: "oc4",
+        realm_domain: "oraclegovcloud.uk",
+    },
+    StaticRegion {
+        id: "uk-gov-cardiff-1",
+        key: "brs",
+        realm: "oc4",
+        realm_domain: "oraclegovcloud.uk",
+    },
+    StaticRegion {
+        id: "us-tacoma-1",
+        key: "tiw",
+        realm: "oc5",
+        realm_domain: "oraclecloud5.com",
+    },
+    StaticRegion {
+        id: "ap-chiyoda-1",
+        key: "nja",
+        realm: "oc8",
+        realm_domain: "oraclecloud8.com",
+    },
+    StaticRegion {
+        id: "ap-ibaraki-1",
+        key: "ukb",
+        realm: "oc8",
+        realm_domain: "oraclecloud8.com",
+    },
+    StaticRegion {
+        id: "me-dcc-muscat-1",
+        key: "mct",
+        realm: "oc9",
+        realm_domain: "oraclecloud9.com",
+    },
+    StaticRegion {
+        id: "ap-dcc-canberra-1",
+        key: "wga",
+        realm: "oc10",
+        realm_domain: "oraclecloud10.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-dublin-1",
+        key: "ork",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-dublin-2",
+        key: "snn",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-milan-1",
+        key: "bgy",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-milan-2",
+        key: "mxp",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-rating-1",
+        key: "dus",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-rating-2",
+        key: "dtm",
+        realm: "oc14",
+        realm_domain: "oraclecloud14.com",
+    },
+    StaticRegion {
+        id: "ap-dcc-gazipur-1",
+        key: "dac",
+        realm: "oc15",
+        realm_domain: "oraclecloud15.com",
+    },
+    StaticRegion {
+        id: "us-westjordan-1",
+        key: "sgu",
+        realm: "oc16",
+        realm_domain: "oraclecloud16.com",
+    },
+    StaticRegion {
+        id: "us-dcc-phoenix-1",
+        key: "ifp",
+        realm: "oc17",
+        realm_domain: "oraclecloud17.com",
+    },
+    StaticRegion {
+        id: "us-dcc-phoenix-2",
+        key: "gcn",
+        realm: "oc17",
+        realm_domain: "oraclecloud17.com",
+    },
+    StaticRegion {
+        id: "us-dcc-phoenix-4",
+        key: "yum",
+        realm: "oc17",
+        realm_domain: "oraclecloud17.com",
+    },
+    StaticRegion {
+        id: "eu-frankfurt-2",
+        key: "str",
+        realm: "oc19",
+        realm_domain: "oraclecloud.eu",
+    },
+    StaticRegion {
+        id: "eu-madrid-2",
+        key: "vll",
+        realm: "oc19",
+        realm_domain: "oraclecloud.eu",
+    },
+    StaticRegion {
+        id: "eu-jovanovac-1",
+        key: "beg",
+        realm: "oc20",
+        realm_domain: "oraclecloud20.com",
+    },
+    StaticRegion {
+        id: "me-dcc-doha-1",
+        key: "doh",
+        realm: "oc21",
+        realm_domain: "oraclecloud21.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-rome-1",
+        key: "nap",
+        realm: "oc22",
+        realm_domain: "psn-pco.it",
+    },
+    StaticRegion {
+        id: "us-somerset-1",
+        key: "ebb",
+        realm: "oc23",
+        realm_domain: "oraclecloud23.com",
+    },
+    StaticRegion {
+        id: "us-thames-1",
+        key: "ebl",
+        realm: "oc23",
+        realm_domain: "oraclecloud23.com",
+    },
+    StaticRegion {
+        id: "eu-dcc-zurich-1",
+        key: "avz",
+        realm: "oc24",
+        realm_domain: "oraclecloud24.com",
+    },
+    StaticRegion {
+        id: "eu-crissier-1",
+        key: "avf",
+        realm: "oc24",
+        realm_domain: "oraclecloud24.com",
+    },
+    StaticRegion {
+        id: "ap-dcc-osaka-1",
+        key: "uky",
+        realm: "oc25",
+        realm_domain: "nricloud.jp",
+    },
+    StaticRegion {
+        id: "ap-dcc-tokyo-1",
+        key: "tyo",
+        realm: "oc25",
+        realm_domain: "nricloud.jp",
+    },
+    StaticRegion {
+        id: "me-abudhabi-3",
+        key: "ahu",
+        realm: "oc26",
+        realm_domain: "oraclecloud26.com",
+    },
+    StaticRegion {
+        id: "me-alain-1",
+        key: "rba",
+        realm: "oc26",
+        realm_domain: "oraclecloud26.com",
+    },
+    StaticRegion {
+        id: "us-dcc-swjordan-1",
+        key: "ozz",
+        realm: "oc27",
+        realm_domain: "oraclecloud27.com",
+    },
+    StaticRegion {
+        id: "us-dcc-swjordan-2",
+        key: "drs",
+        realm: "oc28",
+        realm_domain: "oraclecloud28.com",
+    },
+    StaticRegion {
+        id: "me-abudhabi-2",
+        key: "rkt",
+        realm: "oc29",
+        realm_domain: "oraclecloud29.com",
+    },
+    StaticRegion {
+        id: "me-abudhabi-4",
+        key: "shj",
+        realm: "oc29",
+        realm_domain: "oraclecloud29.com",
+    },
+    StaticRegion {
+        id: "ap-hobsonville-1",
+        key: "izq",
+        realm: "oc31",
+        realm_domain: "sovereigncloud.nz",
+    },
+    StaticRegion {
+        id: "ap-suwon-1",
+        key: "dln",
+        realm: "oc35",
+        realm_domain: "oraclecloud35.com",
+    },
+];
+// === End autogenerated regions ===
