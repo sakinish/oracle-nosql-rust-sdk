@@ -1,7 +1,16 @@
 [package]
 name = "oracle-nosql-rust-sdk-derive"
 version = "0.1.0"
+rust-version = "1.78"
+license = "UPL-1.0"
+description = "Oracle Rust SDK Derives for the NoSQL Database"
+keywords = ["nosql", "oracle", "database"]
+categories = ["database"]
+repository = "https://github.com/oracle/nosql-rust-sdk/tree/main/oracle-nosql-rust-sdk-derive"
+authors = ["John Connelly <john.connelly@oracle.com>"]
+# this is the cargo version, not this crate version
 edition = "2021"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
