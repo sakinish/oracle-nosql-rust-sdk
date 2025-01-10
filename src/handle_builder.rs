@@ -7,7 +7,6 @@
 //! Builder for creating a [`NoSQL Handle`](crate::Handle)
 //!
 
-
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use std::default::Default;
 use std::env;
@@ -37,6 +36,8 @@ pub struct HandleBuilder {
     pub(crate) endpoint: String,
     pub(crate) timeout: Option<Duration>,
     pub(crate) region: Option<Region>,
+    pub(crate) default_compartment_id: String,
+    pub(crate) default_namespace: String,
     // TODO
     //pub(crate) allow_imds: bool,
     pub(crate) use_https: bool,
@@ -280,7 +281,7 @@ impl HandleBuilder {
     pub fn cloud_auth_from_file(self, config_file: &str) -> Result<Self, NoSQLError> {
         self.cloud_auth_from_file_with_profile(config_file, "DEFAULT")
     }
-    /// Specify an OCI config file to use with user-based authentication.
+    /// Specify an OCI config file with specific profile to use with user-based authentication.
     ///
     /// This method allows the use of a file other than the default `~/.oci/config` file.
     /// See [SDK and CLI Configuration File](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm) for details.
@@ -305,6 +306,20 @@ impl HandleBuilder {
         Ok(self)
     }
     // TODO: cloud_auth_from_session
+    /// Set the default compartment to be used for all cloud operations.
+    ///
+    /// The compartment may be specified as either a name (or path for nested compartments) or as an id (OCID).
+    /// A name (vs id) can only be used when authenticated using a specific user identity. It is not available if
+    /// the associated handle authenticated as an Instance Principal (which can be done when calling the service from
+    /// a compute instance in the Oracle Cloud Infrastructure: see [`HandleBuilder::cloud_auth_from_instance()`](crate::HandleBuilder::cloud_auth_from_instance()).)
+    ///
+    /// If no default compartment is given, the root compartment of the tenancy will be used as the default.
+    ///
+    /// This value can be overridden on a per-request basis. For an example, see [`GetRequest::compartment_id()`](crate::GetRequest::compartment_id()).
+    pub fn default_compartment_id(mut self, compartment_id: &str) -> Result<Self, NoSQLError> {
+        self.default_compartment_id = compartment_id.to_string();
+        Ok(self)
+    }
     /// Specify using OCI Instance Principal for authentication.
     ///
     /// Instance Principal is an IAM service feature that enables instances to be authorized actors (or _principals_) to perform actions on service resources.
@@ -438,7 +453,12 @@ impl HandleBuilder {
             }
         }
     }
-
+    /// Set the default namespace to be used for all onprem operations.
+    ///
+    pub fn default_namespace(mut self, namespace: &str) -> Result<Self, NoSQLError> {
+        self.default_namespace = namespace.to_string();
+        Ok(self)
+    }
     /// Add a certificate to use for on-premises https connections.
     pub fn add_cert(mut self, cert: Certificate) -> Result<Self, NoSQLError> {
         self.add_cert = Some(cert);

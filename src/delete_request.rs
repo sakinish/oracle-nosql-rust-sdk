@@ -131,7 +131,7 @@ impl DeleteRequest {
     /// the associated handle authenticated as an Instance Principal (which can be done when calling the service from
     /// a compute instance in the Oracle Cloud Infrastructure: see [`HandleBuilder::cloud_auth_from_instance()`](crate::HandleBuilder::cloud_auth_from_instance()).)
     ///
-    /// If no compartment is given, the root compartment of the tenancy will be used.
+    /// If no compartment is given, the [default compartment for the handle](crate::HandleBuilder::default_compartment_id()) will be used. If that is not set, the root compartment of the tenancy will be used.
     pub fn compartment_id(mut self, compartment_id: &str) -> Self {
         self.compartment_id = compartment_id.to_string();
         self

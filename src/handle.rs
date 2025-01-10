@@ -220,6 +220,7 @@ impl Handle {
         if let Some(sp) = oci_provider {
             headers.insert(
                 "x-nosql-compartment-id",
+                // Note this is the default, may be overridden later
                 HeaderValue::from_str(sp.tenancy_id())?,
             );
             {
@@ -257,6 +258,11 @@ impl Handle {
                 "x-nosql-compartment-id",
                 HeaderValue::from_str(&send_options.compartment_id)?,
             );
+        } else if !self.inner.builder.default_compartment_id.is_empty() {
+            headers.insert(
+                "x-nosql-compartment-id",
+                HeaderValue::from_str(&self.inner.builder.default_compartment_id)?,
+            );
         }
 
         // let send_options.namespace override namespace header
@@ -264,6 +270,11 @@ impl Handle {
             headers.insert(
                 "x-nosql-default-ns",
                 HeaderValue::from_str(&send_options.namespace)?,
+            );
+        } else if !self.inner.builder.default_namespace.is_empty() {
+            headers.insert(
+                "x-nosql-default-ns",
+                HeaderValue::from_str(&self.inner.builder.default_namespace)?,
             );
         }
 
