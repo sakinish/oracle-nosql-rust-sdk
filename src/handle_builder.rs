@@ -7,6 +7,7 @@
 //! Builder for creating a [`NoSQL Handle`](crate::Handle)
 //!
 
+
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use std::default::Default;
 use std::env;
@@ -253,6 +254,8 @@ impl HandleBuilder {
         self.mode = mode;
         if self.mode == HandleMode::Cloudsim {
             self.auth_type = AuthType::Cloudsim;
+        } else if self.mode == HandleMode::Onprem {
+            self.auth_type = AuthType::Onprem;
         }
         Ok(self)
     }
@@ -380,6 +383,7 @@ impl HandleBuilder {
             self.auth = Arc::new(tokio::sync::Mutex::new(AuthConfig { provider: ap }));
         }
         self.mode = HandleMode::Onprem;
+        self.auth_type = AuthType::Onprem;
         Ok(self)
     }
     /// Specify credentials for use with a secure On-premises NoSQL Server from a local file.
