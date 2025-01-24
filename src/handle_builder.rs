@@ -152,8 +152,10 @@ impl HandleBuilder {
     /// | `ORACLE_NOSQL_REGION` | The OCI region identifier. See [`HandleBuilder::cloud_region()`]. |
     /// | `ORACLE_NOSQL_AUTH` | The auth mechanism. One of: `user`, `instance`, `resource`, `onprem`, `cloudsim`. |
     /// | `ORACLE_NOSQL_AUTH_FILE` | For `user` auth, the path to the OCI config file (see [`HandleBuilder::cloud_auth_from_file()`]). For `onprem` auth, the path to the onprem user/password file (see [`HandleBuilder::onprem_auth_from_file()`]).
+    /// | `ORACLE_NOSQL_COMPARTMENT_ID` | The default OCI compartment ID to use. See [`HandleBuilder::default_compartment_id()`].
     /// | `ORACLE_NOSQL_CA_CERT` | For `onprem` auth, the path to the certificate file in `pem` format (see [`HandleBuilder::add_cert_from_pemfile()`]). |
     /// | `ORACLE_NOSQL_ACCEPT_INVALID_CERTS` | For `onprem` auth, if this is set to `1` or `true`, do not check certificates (see [`HandleBuilder::danger_accept_invalid_certs()`]). |
+    /// | `ORACLE_NOSQL_NAMESPACE` | The default onprem namespace to use. See [`HandleBuilder::default_namespace()`].
     ///
     pub fn from_environment(mut self) -> Result<Self, NoSQLError> {
         self.from_environment = true;
@@ -177,6 +179,12 @@ impl HandleBuilder {
             if lv == "true" || lv == "1" {
                 self = self.danger_accept_invalid_certs(true)?;
             }
+        }
+        if let Some(val) = env::var("ORACLE_NOSQL_COMPARTMENT_ID").ok() {
+            self = self.default_compartment_id(&val)?;
+        }
+        if let Some(val) = env::var("ORACLE_NOSQL_NAMESPACE").ok() {
+            self = self.default_namespace(&val)?;
         }
         if let Some(val) = env::var("ORACLE_NOSQL_AUTH").ok() {
             let v = val.to_lowercase();
