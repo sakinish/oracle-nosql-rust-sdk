@@ -13,7 +13,7 @@
 //! the [Oracle NoSQL Database on-premises server](https://www.oracle.com/database/technologies/related/nosql.html)
 //! and to the [Oracle NoSQL Cloud Simulator](https://www.oracle.com/downloads/cloud/nosql-cloud-sdk-downloads.html).
 //!
-//! This SDK supplies and uses Rust `async` methods throughout. There is currently no blocking support.
+//! This SDK supplies and uses Rust `async` methods throughout, using the [tokio](https://crates.io/crates/tokio) runtime. There is currently no blocking support.
 //!
 //! The general flow for an application using the Oracle NoSQL Database is:
 //! - Create a [`HandleBuilder`] with all needed parameters
@@ -57,8 +57,8 @@
 //!
 //!
 //! ## Installation
-//! The Rust SDK for Oracle NoSQL Database is published as a Rust crate. It is
-//! recommended to use the crates.io standard Rust mechanism for usage of this crate.
+//! The Rust SDK for Oracle NoSQL Database is published as a [Rust crate](https://crates.io/crates/oracle-nosql-rust-sdk). It is
+//! recommended to use the Rust standard [cargo](https://doc.rust-lang.org/cargo/) package manager for usage of this crate.
 //!
 //! To do so, add the following dependency to your `Cargo.toml` file:
 //! ```text
@@ -460,7 +460,7 @@
 //!
 //! ## License
 //!
-//! Copyright (C) 2019, 2024, 2025 Oracle and/or its affiliates. All rights reserved.
+//! Copyright (C) 2024, 2025 Oracle and/or its affiliates. All rights reserved.
 //!
 //! This SDK is licensed under the Universal Permissive License 1.0. See
 //! [LICENSE](https://github.com/oracle/nosql-rust-sdk/blob/main/LICENSE.txt) for
