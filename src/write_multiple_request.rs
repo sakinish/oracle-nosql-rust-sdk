@@ -28,7 +28,7 @@ use crate::{DeleteResult, PutResult};
 pub struct WriteMultipleRequest {
     pub(crate) table_name: String,
     pub(crate) compartment_id: String,
-    // TODO: pub(crate) namespace: String,
+    pub(crate) namespace: String,
     pub(crate) timeout: Option<Duration>,
     pub(crate) sub_requests: Vec<Box<dyn NsonSubRequest>>,
     // TODO durability: Option<Vec<u8>>
@@ -165,6 +165,14 @@ impl WriteMultipleRequest {
         self
     }
 
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> WriteMultipleRequest {
+        self.namespace = namespace.to_string();
+        self
+    }
+
     pub fn add(mut self, r: Box<dyn NsonSubRequest>) -> WriteMultipleRequest {
         self.sub_requests.push(r);
         self
@@ -226,6 +234,7 @@ impl WriteMultipleRequest {
             timeout: timeout,
             retryable: false,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

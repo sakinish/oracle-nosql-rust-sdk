@@ -74,8 +74,8 @@ pub struct GetTableRequest {
 #[derive(Default, Debug)]
 pub struct TableResult {
     pub(crate) table_name: String,
-    pub(crate) compartment_id: String, // TODO: Option<>?
-    pub(crate) namespace: String,      // TODO: Option<>?
+    pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
     pub(crate) table_ocid: String,
     pub(crate) ddl: String,
     pub(crate) operation_id: String, // TODO: Option<>?
@@ -124,7 +124,9 @@ impl TableRequest {
         self
     }
 
-    /// On-premises only: set the namespace for the operation.
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
     pub fn namespace(mut self, namespace: &str) -> TableRequest {
         self.namespace = namespace.to_string();
         self
@@ -174,6 +176,7 @@ impl TableRequest {
             timeout: timeout,
             retryable: false,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;
@@ -306,7 +309,9 @@ impl GetTableRequest {
         self
     }
 
-    /// On-premises only: set the namespace for the operation.
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
     pub fn namespace(mut self, namespace: &str) -> GetTableRequest {
         self.namespace = namespace.to_string();
         self

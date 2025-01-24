@@ -32,6 +32,7 @@ pub struct DeleteRequest {
     pub(crate) table_name: String,
     pub(crate) timeout: Option<Duration>,
     pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
     pub(crate) abort_on_fail: bool,
     pub(crate) return_row: bool,
     // TODO: durability
@@ -137,6 +138,14 @@ impl DeleteRequest {
         self
     }
 
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> DeleteRequest {
+        self.namespace = namespace.to_string();
+        self
+    }
+
     /// Succeed only if the record already exists its version matches the given version.
     pub fn if_version(mut self, version: &Version) -> DeleteRequest {
         self.match_version = version.clone();
@@ -164,6 +173,7 @@ impl DeleteRequest {
             timeout: timeout,
             retryable: true,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

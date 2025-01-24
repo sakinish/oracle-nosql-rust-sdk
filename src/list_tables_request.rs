@@ -63,6 +63,7 @@ impl ListTablesRequest {
         self
     }
 
+    /// Set the namespace to be used for this operation.
     pub fn namespace(mut self, namespace: &str) -> ListTablesRequest {
         self.namespace = namespace.to_string();
         self
@@ -87,6 +88,7 @@ impl ListTablesRequest {
             timeout: timeout,
             retryable: true,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

@@ -35,6 +35,7 @@ use std::time::Duration;
 pub struct PutRequest {
     pub(crate) table_name: String,
     pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
     pub(crate) value: MapValue,
     pub(crate) timeout: Option<Duration>,
     pub(crate) abort_on_fail: bool,
@@ -284,6 +285,14 @@ impl PutRequest {
         self
     }
 
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> PutRequest {
+        self.namespace = namespace.to_string();
+        self
+    }
+
     /// Return information about the existing row, if present.
     /// Requesting this information incurs additional cost and may affect operation latency.
     pub fn return_row(mut self, val: bool) -> PutRequest {
@@ -345,6 +354,7 @@ impl PutRequest {
             timeout: timeout,
             retryable: false,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

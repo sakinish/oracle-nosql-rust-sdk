@@ -69,6 +69,7 @@ pub struct FieldRange {
 pub struct MultiDeleteRequest {
     pub(crate) table_name: String,
     pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
     pub(crate) key: FieldValue,
     pub(crate) continuation_key: Option<Vec<u8>>,
     pub(crate) field_range: Option<FieldRange>,
@@ -77,15 +78,6 @@ pub struct MultiDeleteRequest {
     // Durability is currently only used in On-Prem installations.
     // Added in SDK Version 1.3.0
     // TODO durability: Option<Something>
-
-    // namespace is used on-premises only. It defines a namespace to use
-    // for the request. It is optional.
-    // If a namespace is specified in the table name for the request
-    // (using the namespace:tablename format), that value will override this
-    // setting.
-    // This is only available with on-premises installations using NoSQL
-    // Server versions 23.3 and above.
-    // TODO: pub namespace: String,
 
     // TODO: limiters, retry stats, etc
 }
@@ -161,6 +153,14 @@ impl MultiDeleteRequest {
         self
     }
 
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> MultiDeleteRequest {
+        self.namespace = namespace.to_string();
+        self
+    }
+
     /// Specifiy the [`FieldRange`] to be used for the operation.
     ///
     /// It is optional, but required to delete a specific range of rows.
@@ -201,6 +201,7 @@ impl MultiDeleteRequest {
             timeout: timeout,
             retryable: false,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

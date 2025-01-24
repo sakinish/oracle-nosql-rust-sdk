@@ -21,6 +21,7 @@ use std::time::Duration;
 pub struct GetRequest {
     pub(crate) table_name: String,
     pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
     pub(crate) timeout: Option<Duration>,
     pub(crate) key: MapValue,
     pub(crate) consistency: Consistency,
@@ -110,6 +111,14 @@ impl GetRequest {
         self
     }
 
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> GetRequest {
+        self.namespace = namespace.to_string();
+        self
+    }
+
     /// Specify the primary key to use to find the row (record) in the table, from a [`MapValue`].
     ///
     /// `key` must contain all fields required to construct the primary key for the table.
@@ -160,6 +169,7 @@ impl GetRequest {
             timeout: timeout,
             retryable: true,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = h.send_and_receive(w, &mut opts).await?;

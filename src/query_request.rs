@@ -60,6 +60,7 @@ pub struct QueryRequest {
     pub(crate) consistency: Consistency,
     pub(crate) timeout: Option<Duration>,
     pub(crate) compartment_id: String,
+    pub(crate) namespace: String,
 
     // max_memory_consumption specifies the maximum amount of memory in bytes that
     // may be consumed by the query at the client for operations such as
@@ -248,6 +249,14 @@ impl QueryRequest {
     /// If no compartment is given, the [default compartment for the handle](crate::HandleBuilder::default_compartment_id()) will be used. If that is not set, the root compartment of the tenancy will be used.
     pub fn compartment_id(mut self, compartment_id: &str) -> Self {
         self.compartment_id = compartment_id.to_string();
+        self
+    }
+
+    /// On-premises only: set the namespace to be used for this operation.
+    ///
+    /// If no namespace is given, the [default namespace for the handle](crate::HandleBuilder::default_namespace()) will be used. If that is not set, no namespace will be used.
+    pub fn namespace(mut self, namespace: &str) -> QueryRequest {
+        self.namespace = namespace.to_string();
         self
     }
 
@@ -593,6 +602,7 @@ impl QueryRequest {
             timeout: timeout,
             retryable: true,
             compartment_id: self.compartment_id.clone(),
+            namespace: self.namespace.clone(),
             ..Default::default()
         };
         let mut r = handle.send_and_receive(w, &mut opts).await?;
