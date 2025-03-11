@@ -57,7 +57,7 @@ recommended to use the Rust standard [cargo](https://doc.rust-lang.org/cargo/) p
 To do so, add the following dependency to your `Cargo.toml` file:
 ```
 [dependencies]
-oracle-nosql-rust-sdk = "0.1.0"
+oracle-nosql-rust-sdk = "0.1"
 ```
 
 ### Configuring the SDK

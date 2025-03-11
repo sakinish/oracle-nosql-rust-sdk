@@ -63,7 +63,7 @@
 //! To do so, add the following dependency to your `Cargo.toml` file:
 //! ```text
 //! [dependencies]
-//! oracle-nosql-rust-sdk = "0.1.0"
+//! oracle-nosql-rust-sdk = "0.1"
 //! ```
 //!
 //! ## Configuring the SDK
