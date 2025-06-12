@@ -80,7 +80,7 @@
 //!   - The **Cloud Service** is secure and requires a Cloud Service identity as well as authorization for desired operations.
 //!   - The **Cloud Simulator** is not secure at all and requires no identity.
 //!   - The **On-Premises** configuration can be either secure or not, and also requires an instance of the NoSQL DB Proxy service to access the on-premise database.
-//! - **API differences.** Some types and methods are specific to an environment. For example, the on-premise configuration includes methods to create namespaces and users and these concepts don’t exist in the cloud service. Similarly, the cloud service includes interfaces to specify and acquire throughput information on tables that is not relevant on-premise. Such differences are noted in the API documentation.
+//! - **API differences.** Some types and methods are specific to an environment. For example, the on-premise configuration includes methods to create namespaces and users and these concepts don't exist in the cloud service. Similarly, the cloud service includes interfaces to specify and acquire throughput information on tables that is not relevant on-premise. Such differences are noted in the API documentation.
 //!
 //! Before using the Cloud Service, it is recommended that users start with the Cloud Simulator to become familiar with the interfaces supported by the SDK.
 //!
@@ -120,9 +120,9 @@
 //!
 //! Information about how to acquire this information is found in the [Required Keys and OCIDs](https://docs.cloud.oracle.com/iaas/Content/API/Concepts/apisigningkey.htm) page. Specifically, these topics can be found on that page:
 //!
-//! - [Where to Get the Tenancy’s OCID and User’s OCID](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#Other)
+//! - [Where to Get the Tenancy's OCID and User's OCID](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#Other)
 //! - [How to Generate an API Signing Key](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#How)
-//! - [How to Get the Key’s Fingerprint](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#How3)
+//! - [How to Get the Key's Fingerprint](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#How3)
 //! - [How to Upload the Public Key](https://docs.cloud.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#How2)
 //!
 //! The way to supply the credentials is to use a credentials file, which by default is found in `$HOME/.oci/config` but the location can be specified in the API calls (see below).
@@ -441,7 +441,7 @@
 //! There are a few ways to get help or report issues:
 //! - Open an issue in the [Issues](https://github.com/oracle/nosql-rust-sdk/issues) page.
 //! - Post your question on the [Oracle NoSQL Database Community](https://forums.oracle.com/ords/apexds/domain/dev-community/category/nosql_database).
-//! - [Email to nosql\_sdk\_help\_grp@oracle.com](mailto:nosql_sdk_help_grp@oracle.com)
+//! - [Email to nosql_sdk_help_grp@oracle.com](mailto:nosql_sdk_help_grp@oracle.com)
 //!
 //! When requesting help please be sure to include as much detail as possible,
 //! including version of the SDK and **simple**, standalone example code as needed.
@@ -475,8 +475,13 @@ pub use crate::handle::Handle;
 
 pub(crate) mod aggr_iter;
 pub(crate) mod arith_op_iter;
-pub(crate) mod auth_common;
-pub use crate::auth_common::authentication_provider::AuthenticationProvider;
+pub mod auth_common;
+
+// Export authentication components for external use
+pub use auth_common::{
+    authentication_provider::AuthenticationProvider,
+    resource_principal_auth_provider::ResourcePrincipalAuthProvider,
+};
 
 pub(crate) mod collect_iter;
 pub(crate) mod const_iter;
