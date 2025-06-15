@@ -560,7 +560,7 @@ pub(crate) mod writer;
 /// Global flag for verbose authentication logging in NoSQL operations
 /// Computed once to avoid repeated config access
 static VERBOSE_AUTH_LOGGING: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
-    app_lib_base::cfg::AppConfig::global()
+    lib_base::cfg::AppConfig::global()
         .nosql
         .verbose_auth_logging
 });

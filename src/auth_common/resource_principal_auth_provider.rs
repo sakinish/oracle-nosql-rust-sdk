@@ -355,12 +355,6 @@ impl ResourcePrincipalAuthProvider {
             &payload_str[..256.min(payload_str.len())]
         );
 
-        // Parse the JSON payload (following jwt.rs pattern)
-        let payload_json: Value = serde_json::from_str(&payload_str)
-            .map_err(|e| format!("Failed to parse JWT payload JSON: {}", e))?;
-
-        debug_auth!("      ✅ Successfully parsed JWT payload JSON");
-
         debug_auth!("      📋 Re-parsing JSON payload for tenancy and expiration...");
         let v: Value = serde_json::from_slice(&decoded)?;
         debug_auth!("      ✅ JSON payload parsed successfully");
