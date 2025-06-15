@@ -10,6 +10,7 @@ use openssl::rsa::Rsa;
 use serde_json::Value;
 use std::env;
 use std::error::Error;
+use tracing::debug;
 use tracing::trace;
 
 use crate::auth_common::authentication_provider::AuthenticationProvider;
@@ -78,7 +79,7 @@ fn get_env(var: &str) -> Result<String, Box<dyn Error>> {
                 var,
                 e.to_string()
             )
-            .into())
+            .into());
         }
     };
     Ok(v)
@@ -270,7 +271,10 @@ impl ResourcePrincipalAuthProvider {
                     })?
             }
             Err(e) => {
-                debug_auth!("   ⚠️  Could not JSON decode rpst, will extract from JWT payload instead. Error: {}", e);
+                debug_auth!(
+                    "   ⚠️  Could not JSON decode rpst, will extract from JWT payload instead. Error: {}",
+                    e
+                );
                 debug_auth!("   ⚠️  Falling back to JWT payload extraction...");
                 // Will be extracted later from JWT payload
                 String::new()
