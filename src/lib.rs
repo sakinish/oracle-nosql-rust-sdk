@@ -562,6 +562,7 @@ pub(crate) mod writer;
 static VERBOSE_AUTH_LOGGING: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
     lib_base::cfg::AppConfig::global()
         .nosql
+        .auth
         .verbose_auth_logging
 });
 

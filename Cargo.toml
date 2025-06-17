@@ -45,3 +45,8 @@ rand = "0.8"
 
 [build-dependencies]
 rustc_version = "0.4"
+
+# Suppress workspace lints for vendor code
+[lints.rust]
+unused_imports = "allow"
+elided_named_lifetimes = "allow"
