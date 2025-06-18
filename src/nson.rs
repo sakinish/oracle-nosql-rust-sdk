@@ -152,7 +152,7 @@ pub trait NsonRequest {
     // TODO: fn retryable(&self) -> bool;
 }
 
-pub trait NsonSubRequest: std::fmt::Debug {
+pub trait NsonSubRequest: std::fmt::Debug + Send + Sync {
     fn serialize(&self, w: &mut Writer, timeout: &Duration);
 }
 
