@@ -14,7 +14,6 @@ use tracing::debug;
 use tracing::trace;
 
 use crate::auth_common::authentication_provider::AuthenticationProvider;
-use crate::debug_auth;
 
 static EMPTY_STRING: &str = "";
 
@@ -111,104 +110,104 @@ impl ResourcePrincipalAuthProvider {
         passphrase: Option<String>,
         region: String,
     ) -> Result<ResourcePrincipalAuthProvider, Box<dyn Error>> {
-        debug_auth!("🔧 ResourcePrincipalAuthProvider::new_from_values() starting");
-        debug_auth!("   📍 Region: {}", region);
-        debug_auth!("   🔑 RPST token length: {} chars", rpst.len());
-        debug_auth!(
+        debug!("🔧 ResourcePrincipalAuthProvider::new_from_values() starting");
+        debug!("   📍 Region: {}", region);
+        debug!("   🔑 RPST token length: {} chars", rpst.len());
+        debug!(
             "   🔑 RPST token (first 16 / last 16 chars): {}... / ...{}",
             &rpst[..16.min(rpst.len())],
             &rpst[(rpst.len().saturating_sub(16))..]
         );
-        debug_auth!("   🗝️  Private PEM length: {} chars", private_pem.len());
-        debug_auth!(
+        debug!("   🗝️  Private PEM length: {} chars", private_pem.len());
+        debug!(
             "   🗝️  Private PEM (first 16 / last 16 chars): {}... / ...{}",
             &private_pem[..16.min(private_pem.len())],
             &private_pem[(private_pem.len().saturating_sub(16))..]
         );
-        debug_auth!("   🔒 Passphrase provided: {}", passphrase.is_some());
+        debug!("   🔒 Passphrase provided: {}", passphrase.is_some());
         if let Some(ref p) = passphrase {
-            debug_auth!("   🔒 Passphrase length: {} chars", p.len());
-            debug_auth!(
+            debug!("   🔒 Passphrase length: {} chars", p.len());
+            debug!(
                 "   🔒 Passphrase (first 16 / last 16 chars): {}... / ...{}",
                 &p[..16.min(p.len())],
                 &p[(p.len().saturating_sub(16))..]
             );
         }
-        debug_auth!("   📂 RPST is path: {}", is_path(&rpst));
-        debug_auth!("   📂 Private PEM is path: {}", is_path(&private_pem));
+        debug!("   📂 RPST is path: {}", is_path(&rpst));
+        debug!("   📂 Private PEM is path: {}", is_path(&private_pem));
 
         // Check the the passphrase and the key are both paths or are both strings
         match &passphrase {
             Some(p) => {
-                debug_auth!("   🔍 Validating passphrase and private key consistency...");
+                debug!("   🔍 Validating passphrase and private key consistency...");
                 if is_path(p) != is_path(&private_pem) {
-                    debug_auth!("   ❌ ERROR: passphrase and private key path/value mismatch");
+                    debug!("   ❌ ERROR: passphrase and private key path/value mismatch");
                     return Err(
                         "passphrase and private key must be either both full paths or both values"
                             .into(),
                     );
                 }
-                debug_auth!("   ✅ Passphrase and private key consistency check passed");
+                debug!("   ✅ Passphrase and private key consistency check passed");
             }
             None => {
-                debug_auth!("   ℹ️  No passphrase provided");
+                debug!("   ℹ️  No passphrase provided");
             }
         }
 
         // TODO check region is non-empty?
         if region.is_empty() {
-            debug_auth!("   ❌ ERROR: Region is empty");
+            debug!("   ❌ ERROR: Region is empty");
             return Err("Region cannot be empty".into());
         }
-        debug_auth!("   ✅ Region validation passed");
+        debug!("   ✅ Region validation passed");
 
-        debug_auth!("   🔑 Loading session private key...");
+        debug!("   🔑 Loading session private key...");
         let session_private_key = {
             if is_path(&private_pem) {
-                debug_auth!("      📖 Loading private key from file: {}", private_pem);
+                debug!("      📖 Loading private key from file: {}", private_pem);
                 // load info from path(s) given
                 let byte_vec = std::fs::read(&private_pem)?;
-                debug_auth!("      📊 Private key file size: {} bytes", byte_vec.len());
+                debug!("      📊 Private key file size: {} bytes", byte_vec.len());
                 match &passphrase {
                     Some(p) => {
-                        debug_auth!(
+                        debug!(
                             "      🔓 Loading private key with passphrase from file: {}",
                             p
                         );
                         let pass_vec = std::fs::read(p)?;
-                        debug_auth!("      📊 Passphrase file size: {} bytes", pass_vec.len());
+                        debug!("      📊 Passphrase file size: {} bytes", pass_vec.len());
                         Rsa::private_key_from_pem_passphrase(&byte_vec, &pass_vec)?
                     }
                     None => {
-                        debug_auth!("      🔓 Loading private key without passphrase");
+                        debug!("      🔓 Loading private key without passphrase");
                         Rsa::private_key_from_pem(&byte_vec)?
                     }
                 }
             } else {
-                debug_auth!("      🔗 Loading private key from string value");
+                debug!("      🔗 Loading private key from string value");
                 // info given directly
                 match passphrase {
                     Some(p) => {
-                        debug_auth!("      🔓 Loading private key with passphrase from string");
+                        debug!("      🔓 Loading private key with passphrase from string");
                         Rsa::private_key_from_pem_passphrase(private_pem.as_bytes(), p.as_bytes())?
                     }
                     None => {
-                        debug_auth!("      🔓 Loading private key without passphrase from string");
+                        debug!("      🔓 Loading private key without passphrase from string");
                         Rsa::private_key_from_pem(private_pem.as_bytes())?
                     }
                 }
             }
         };
-        debug_auth!("   ✅ Session private key loaded successfully");
+        debug!("   ✅ Session private key loaded successfully");
 
-        debug_auth!("   🎟️  Processing RPST token...");
+        debug!("   🎟️  Processing RPST token...");
         // decode token string: if file, read that
         let token = {
             if is_path(&rpst) {
-                debug_auth!("      📖 Reading RPST token from file: {}", rpst);
+                debug!("      📖 Reading RPST token from file: {}", rpst);
                 let byte_vec = std::fs::read(&rpst)?;
-                debug_auth!("      📊 RPST token file size: {} bytes", byte_vec.len());
-                debug_auth!(
+                debug!("      📊 RPST token file size: {} bytes", byte_vec.len());
+                debug!(
                     "      📊 Raw file bytes (first 16 / last 16): {:02x?}... / ...{:02x?}",
                     &byte_vec[..16.min(byte_vec.len())].to_vec(),
                     &byte_vec[(byte_vec.len().saturating_sub(16))..].to_vec()
@@ -218,19 +217,19 @@ impl ResourcePrincipalAuthProvider {
                     .next()
                     .ok_or("invalid data in RPST token file")?
                     .to_string();
-                debug_auth!(
+                debug!(
                     "      ✅ RPST token read from file, length: {} chars",
                     token_content.len()
                 );
-                debug_auth!(
+                debug!(
                     "      ✅ Token from file (first 16 / last 16 chars): {}... / ...{}",
                     &token_content[..16.min(token_content.len())],
                     &token_content[(token_content.len().saturating_sub(16))..]
                 );
                 token_content
             } else {
-                debug_auth!("      🔗 Using RPST token from string value");
-                debug_auth!(
+                debug!("      🔗 Using RPST token from string value");
+                debug!(
                     "      🔗 Token from string (first 16 / last 16 chars): {}... / ...{}",
                     &rpst[..16.min(rpst.len())],
                     &rpst[(rpst.len().saturating_sub(16))..]
@@ -239,12 +238,12 @@ impl ResourcePrincipalAuthProvider {
             }
         };
 
-        debug_auth!("   🎫 Extracting final_st_token by JSON decoding rpst variable...");
+        debug!("   🎫 Extracting final_st_token by JSON decoding rpst variable...");
         // JSON decode the rpst/token to extract the 'token' field directly
         let final_st_token = match serde_json::from_str::<Value>(&token) {
             Ok(rpst_json) => {
-                debug_auth!("      ✅ Successfully JSON decoded rpst variable");
-                debug_auth!(
+                debug!("      ✅ Successfully JSON decoded rpst variable");
+                debug!(
                     "      📋 Available fields in rpst JSON: {:?}",
                     rpst_json
                         .as_object()
@@ -254,11 +253,11 @@ impl ResourcePrincipalAuthProvider {
                 rpst_json["token"]
                     .as_str()
                     .map(|s| {
-                        debug_auth!(
+                        debug!(
                             "      ✅ Extracted final_st_token from rpst 'token' field: {} chars",
                             s.len()
                         );
-                        debug_auth!(
+                        debug!(
                             "      🎟️  final_st_token (first 16 / last 16 chars): {}... / ...{}",
                             &s[..16.min(s.len())],
                             &s[(s.len().saturating_sub(16))..]
@@ -266,16 +265,16 @@ impl ResourcePrincipalAuthProvider {
                         s.to_owned()
                     })
                     .ok_or_else(|| {
-                        debug_auth!("   ❌ ERROR: 'token' field not found in rpst JSON");
+                        debug!("   ❌ ERROR: 'token' field not found in rpst JSON");
                         format!("'token' field not found in rpst JSON")
                     })?
             }
             Err(e) => {
-                debug_auth!(
+                debug!(
                     "   ⚠️  Could not JSON decode rpst, will extract from JWT payload instead. Error: {}",
                     e
                 );
-                debug_auth!("   ⚠️  Falling back to JWT payload extraction...");
+                debug!("   ⚠️  Falling back to JWT payload extraction...");
                 // Will be extracted later from JWT payload
                 String::new()
             }
@@ -284,8 +283,8 @@ impl ResourcePrincipalAuthProvider {
         // Note: in Resource Principal, the tenancy is extracted from the given RPST token.
         // In Instance Principal, the tenancy is extracted from the leaf certificate.
 
-        debug_auth!("   🔍 Parsing RPST token for tenancy and expiration...");
-        debug_auth!(
+        debug!("   🔍 Parsing RPST token for tenancy and expiration...");
+        debug!(
             "   🔍 Full token being parsed (first 16 / last 16 chars): {}... / ...{}",
             &token[..16.min(token.len())],
             &token[(token.len().saturating_sub(16))..]
@@ -298,14 +297,14 @@ impl ResourcePrincipalAuthProvider {
         // header: skip for now
         let header = parts.next();
         if header.is_none() {
-            debug_auth!("   ❌ ERROR: RPST token missing header");
+            debug!("   ❌ ERROR: RPST token missing header");
             return Err("invalid RPST token: missing header".into());
         }
-        debug_auth!(
+        debug!(
             "      📦 RPST header found, length: {} chars",
             header.unwrap().len()
         );
-        debug_auth!(
+        debug!(
             "      📦 Header (first 16 / last 16 chars): {}... / ...{}",
             &header.unwrap()[..16.min(header.unwrap().len())],
             &header.unwrap()[(header.unwrap().len().saturating_sub(16))..]
@@ -313,8 +312,8 @@ impl ResourcePrincipalAuthProvider {
 
         let payload = match parts.next() {
             Some(p) => {
-                debug_auth!("      📦 RPST payload found, length: {} chars", p.len());
-                debug_auth!(
+                debug!("      📦 RPST payload found, length: {} chars", p.len());
+                debug!(
                     "      📦 Payload (first 16 / last 16 chars): {}... / ...{}",
                     &p[..16.min(p.len())],
                     &p[(p.len().saturating_sub(16))..]
@@ -322,61 +321,61 @@ impl ResourcePrincipalAuthProvider {
                 p
             }
             None => {
-                debug_auth!("   ❌ ERROR: RPST token missing payload");
+                debug!("   ❌ ERROR: RPST token missing payload");
                 return Err("invalid RPST token: missing payload".into());
             }
         };
 
         let signature = parts.next();
         if let Some(sig) = signature {
-            debug_auth!("      📦 RPST signature found, length: {} chars", sig.len());
-            debug_auth!(
+            debug!("      📦 RPST signature found, length: {} chars", sig.len());
+            debug!(
                 "      📦 Signature (first 16 / last 16 chars): {}... / ...{}",
                 &sig[..16.min(sig.len())],
                 &sig[(sig.len().saturating_sub(16))..]
             );
         } else {
-            debug_auth!("      ⚠️  No signature part found in token");
+            debug!("      ⚠️  No signature part found in token");
         }
 
-        debug_auth!("      🔓 Decoding base64 payload...");
+        debug!("      🔓 Decoding base64 payload...");
         // the payload should not be padded
         let decoded = Base64Unpadded::decode_vec(&payload)?;
-        debug_auth!("      📊 Decoded payload size: {} bytes", decoded.len());
-        debug_auth!(
+        debug!("      📊 Decoded payload size: {} bytes", decoded.len());
+        debug!(
             "      📊 Decoded raw bytes (first 16 / last 16): {:02x?}... / ...{:02x?}",
             &decoded[..16.min(decoded.len())].to_vec(),
             &decoded[(decoded.len().saturating_sub(16))..].to_vec()
         );
 
-        debug_auth!("      🎫 Extracting token using jwt.rs pattern...");
+        debug!("      🎫 Extracting token using jwt.rs pattern...");
         // Following jwt.rs pattern: bytes -> string -> JSON -> extract token field
         let payload_str = String::from_utf8(decoded.clone())
             .map_err(|e| format!("JWT payload not valid UTF-8: {}", e))?;
 
-        debug_auth!(
+        debug!(
             "      📋 Decoded JWT payload string (first 256 chars): {}...",
             &payload_str[..256.min(payload_str.len())]
         );
 
-        debug_auth!("      📋 Re-parsing JSON payload for tenancy and expiration...");
+        debug!("      📋 Re-parsing JSON payload for tenancy and expiration...");
         let v: Value = serde_json::from_slice(&decoded)?;
-        debug_auth!("      ✅ JSON payload parsed successfully");
+        debug!("      ✅ JSON payload parsed successfully");
 
         // TODO: better method for checking these values (not checking for "null")
-        debug_auth!(
+        debug!(
             "      🏢 Extracting tenancy from '{}' claim...",
             TENANCY_CLAIM_KEY
         );
         let tenancy_raw = format!("{}", v[TENANCY_CLAIM_KEY]);
-        debug_auth!("      🏢 Raw tenancy value: {}", tenancy_raw);
+        debug!("      🏢 Raw tenancy value: {}", tenancy_raw);
         let tenancy = tenancy_raw.replace("\"", "");
         if tenancy == "null" {
-            debug_auth!(
+            debug!(
                 "   ❌ ERROR: RPST token missing '{}' claim",
                 TENANCY_CLAIM_KEY
             );
-            debug_auth!(
+            debug!(
                 "   ❌ Available claims in JSON: {:?}",
                 v.as_object().map(|obj| obj.keys().collect::<Vec<_>>())
             );
@@ -386,19 +385,19 @@ impl ResourcePrincipalAuthProvider {
                     .into(),
             );
         }
-        debug_auth!(
+        debug!(
             "      ✅ Tenancy extracted (first 16 / last 16 chars): {}... / ...{}",
             &tenancy[..16.min(tenancy.len())],
             &tenancy[(tenancy.len().saturating_sub(16))..]
         );
 
-        debug_auth!("      ⏰ Extracting expiration from 'exp' claim...");
+        debug!("      ⏰ Extracting expiration from 'exp' claim...");
         let exp_raw = format!("{}", v["exp"]);
-        debug_auth!("      ⏰ Raw expiration value: {}", exp_raw);
+        debug!("      ⏰ Raw expiration value: {}", exp_raw);
         let exp = exp_raw.replace("\"", "");
         if exp == "null" {
-            debug_auth!("   ❌ ERROR: RPST token missing 'exp' claim");
-            debug_auth!(
+            debug!("   ❌ ERROR: RPST token missing 'exp' claim");
+            debug!(
                 "   ❌ Available claims in JSON: {:?}",
                 v.as_object().map(|obj| obj.keys().collect::<Vec<_>>())
             );
@@ -406,12 +405,12 @@ impl ResourcePrincipalAuthProvider {
                 .as_str()
                 .into());
         }
-        debug_auth!("      ✅ Expiration extracted: {}", exp);
+        debug!("      ✅ Expiration extracted: {}", exp);
 
         trace!("rpst expiration={}", exp);
         trace!("using RPST token: {}", token);
 
-        debug_auth!("   🏗️  Creating ResourcePrincipalAuthProvider instance...");
+        debug!("   🏗️  Creating ResourcePrincipalAuthProvider instance...");
         let auth_provider = ResourcePrincipalAuthProvider {
             token: final_st_token,
             session_private_key: session_private_key,
@@ -419,15 +418,15 @@ impl ResourcePrincipalAuthProvider {
             region: region,
         };
 
-        debug_auth!("✅ ResourcePrincipalAuthProvider::new_from_values() completed successfully");
-        debug_auth!("   📍 Final region: {}", auth_provider.region);
-        debug_auth!(
+        debug!("✅ ResourcePrincipalAuthProvider::new_from_values() completed successfully");
+        debug!("   📍 Final region: {}", auth_provider.region);
+        debug!(
             "   🏢 Final tenancy (first 16 / last 16 chars): {}... / ...{}",
             &auth_provider.tenancy_id[..16.min(auth_provider.tenancy_id.len())],
             &auth_provider.tenancy_id[(auth_provider.tenancy_id.len().saturating_sub(16))..]
         );
-        debug_auth!("   🎟️  Final token: {} chars", auth_provider.token.len());
-        debug_auth!(
+        debug!("   🎟️  Final token: {} chars", auth_provider.token.len());
+        debug!(
             "   🎟️  Final token (first 16 / last 16 chars): {}... / ...{}",
             &auth_provider.token[..16.min(auth_provider.token.len())],
             &auth_provider.token[(auth_provider.token.len().saturating_sub(16))..]

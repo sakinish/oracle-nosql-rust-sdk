@@ -557,22 +557,3 @@ pub use crate::write_multiple_request::{
     SubOperationResult, WriteMultipleRequest, WriteMultipleResult,
 };
 pub(crate) mod writer;
-/// Global flag for verbose authentication logging in NoSQL operations
-/// Computed once to avoid repeated config access
-static VERBOSE_AUTH_LOGGING: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
-    lib_base::cfg::AppConfig::global()
-        .nosql
-        .auth
-        .verbose_auth_logging
-});
-
-/// Macro for conditional authentication debug logging in NoSQL operations
-/// Only logs when verbose_auth_logging is enabled
-#[macro_export]
-macro_rules! debug_auth {
-    ($($args:tt)*) => {
-        if *crate::VERBOSE_AUTH_LOGGING {
-            tracing::debug!($($args)*);
-        }
-    };
-}
