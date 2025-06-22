@@ -654,6 +654,7 @@ impl<T: NoSQLColumnFromFieldValue> NoSQLColumnFromFieldValue for Option<T> {
         match fv {
             FieldValue::Null => return Ok(None),
             FieldValue::JsonNull => return Ok(None),
+            FieldValue::Uninitialized => return Ok(None),
             _ => (),
         }
         Ok(Some(T::from_field(fv)?))
