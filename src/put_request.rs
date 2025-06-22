@@ -502,6 +502,58 @@ impl NsonRequest for PutRequest {
 
 impl NsonSubRequest for PutRequest {
     fn serialize(&self, w: &mut Writer, timeout: &Duration) {
-        self.serialize_internal(w, true, false, timeout);
+        // For subrequests in WriteMultiple, we need to write a complete operation map
+        let mut ns = NsonSerializer::new(w);
+
+        // Start the operation map
+        ns.start_map("");
+
+        // Write operation fields
+        let mut opcode = OpCode::Put;
+        if self.match_version.len() > 0 {
+            opcode = OpCode::PutIfVersion;
+        } else if self.if_present {
+            opcode = OpCode::PutIfPresent;
+        } else if self.if_absent {
+            opcode = OpCode::PutIfAbsent;
+        }
+
+        ns.write_i32_field(OP_CODE, opcode as i32);
+
+        if self.abort_on_fail {
+            ns.write_bool_field(ABORT_ON_FAIL, true);
+        }
+
+        ns.write_true_bool_field(RETURN_ROW, self.return_row);
+
+        if self.match_version.len() > 0 {
+            ns.write_binary_field(ROW_VERSION, &self.match_version);
+        }
+
+        if self.use_table_ttl {
+            ns.write_bool_field(UPDATE_TTL, true);
+        } else if self.ttl.as_secs() > 0 {
+            // currently, NoSQL only allows DAYS or HOURS settings.
+            // calculate a whole number of hours, and if it is evenly divisible by 24,
+            // convert that to days.
+            let mut hours = self.ttl.as_secs() / 3600;
+            // minumum TTL
+            if hours == 0 {
+                hours = 1;
+            }
+            let mut ttl = format!("{} HOURS", hours);
+            if (hours % 24) == 0 {
+                ttl = format!("{} DAYS", hours / 24);
+            }
+            ns.write_string_field(TTL, &ttl);
+            ns.write_bool_field(UPDATE_TTL, true);
+        }
+
+        ns.write_true_bool_field(EXACT_MATCH, self.exact_match);
+
+        ns.write_map_field(VALUE, &self.value);
+
+        // End the operation map
+        ns.end_map("");
     }
 }

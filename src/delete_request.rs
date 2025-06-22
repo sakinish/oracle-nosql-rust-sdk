@@ -292,6 +292,33 @@ impl NsonRequest for DeleteRequest {
 
 impl NsonSubRequest for DeleteRequest {
     fn serialize(&self, w: &mut Writer, timeout: &Duration) {
-        self.serialize_internal(w, true, false, timeout);
+        // For subrequests in WriteMultiple, we need to write a complete operation map
+        let mut ns = NsonSerializer::new(w);
+
+        // Start the operation map
+        ns.start_map("");
+
+        // Write operation fields
+        let mut opcode = OpCode::Delete;
+        if self.match_version.len() > 0 {
+            opcode = OpCode::DeleteIfVersion;
+        }
+
+        ns.write_i32_field(OP_CODE, opcode as i32);
+
+        if self.abort_on_fail {
+            ns.write_bool_field(ABORT_ON_FAIL, true);
+        }
+
+        ns.write_true_bool_field(RETURN_ROW, true);
+
+        if self.match_version.len() > 0 {
+            ns.write_binary_field(ROW_VERSION, &self.match_version);
+        }
+
+        ns.write_map_field(KEY, &self.key);
+
+        // End the operation map
+        ns.end_map("");
     }
 }
