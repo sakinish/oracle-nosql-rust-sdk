@@ -291,7 +291,7 @@ impl NsonRequest for DeleteRequest {
 }
 
 impl NsonSubRequest for DeleteRequest {
-    fn serialize(&self, w: &mut Writer, timeout: &Duration) {
+    fn serialize(&self, w: &mut Writer, _timeout: &Duration) {
         // For subrequests in WriteMultiple, we need to write a complete operation map
         let mut ns = NsonSerializer::new(w);
 
