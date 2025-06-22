@@ -319,7 +319,7 @@ async fn do_deletes(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Error>> 
 async fn do_inserts(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Error>> {
     // Use a prepared statement for all inserts
     let stmt = "INSERT INTO test_multi_thread(id, name) VALUES($id, \"john\")";
-    let res = QueryRequest::new(stmt)
+    let res = QueryRequest::new(stmt, "test_multi_thread")
         .prepare_only()
         .execute(&handle)
         .await?;
@@ -342,7 +342,7 @@ async fn do_inserts(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Error>> 
 async fn do_selects(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Error>> {
     // Use a prepared statement for all queries
     let stmt = "SELECT * FROM test_multi_thread where id = $id";
-    let res = QueryRequest::new(stmt)
+    let res = QueryRequest::new(stmt, "test_multi_thread")
         .prepare_only()
         .execute(&handle)
         .await?;
@@ -366,7 +366,9 @@ async fn do_full_selects(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Err
     while now() <= end_sec {
         // Get records using a simple select statement
         let stmt = format!("SELECT * FROM test_multi_thread order by id");
-        let selres = QueryRequest::new(&stmt).execute(&handle).await?;
+        let selres = QueryRequest::new(&stmt, "test_multi_thread")
+            .execute(&handle)
+            .await?;
         debug!("Full Select QueryResult={:?}", selres);
         let ms = (rand::random::<u64>() % 100) + 10;
         debug!("do_full_selects() sleeping for {} ms", ms);
@@ -378,7 +380,7 @@ async fn do_full_selects(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Err
 async fn do_updates(handle: Handle, end_sec: u64) -> Result<(), Box<dyn Error>> {
     // Use a prepared statement for all updates
     let stmt = "UPDATE test_multi_thread set name = 'martha' where id = $id";
-    let res = QueryRequest::new(stmt)
+    let res = QueryRequest::new(stmt, "test_multi_thread")
         .prepare_only()
         .execute(&handle)
         .await?;

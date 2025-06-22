@@ -494,7 +494,7 @@ async fn do_query_test(
 ) -> Option<Vec<MapValue>> {
     let msg_prefix = format!("Testcase {}/{}: Query(stmt={}) ", ts.name, tc.name, stmt);
 
-    let mut prep_req = QueryRequest::new(&stmt).prepare_only();
+    let mut prep_req = QueryRequest::new(&stmt, "qtf_table").prepare_only();
     let prep_res = prep_req.execute(handle).await;
 
     if tc.expect_compile_err {

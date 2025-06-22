@@ -153,13 +153,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Simple query, get all rows
-    let qres = QueryRequest::new("select * from testusers")
+    let qres = QueryRequest::new("select * from testusers", "testusers")
         .execute(&handle)
         .await?;
     println!("QueryResult = {:?}", qres);
 
     // Query with ordering
-    let qres1 = QueryRequest::new("select * from testusers order by id")
+    let qres1 = QueryRequest::new("select * from testusers order by id", "testusers")
         .execute(&handle)
         .await?;
     println!("QueryResult1 = {:?}", qres1);

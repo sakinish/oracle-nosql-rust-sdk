@@ -53,6 +53,7 @@ use tracing::trace;
 /// for parameterized queries using bind variables.
 #[derive(Default, Debug)]
 pub struct QueryRequest {
+    pub(crate) table_name: String,
     pub(crate) prepare_only: bool,
     //pub(crate) limit: u32,
     pub(crate) max_read_kb: u32,
@@ -177,13 +178,16 @@ impl QueryRequest {
     /// necessarily have to be a `SELECT` query. It could also be one of `INSERT`, `UPDATE`,
     /// or `DELETE`.
     ///
+    /// The `table_name` parameter is required for the request to be authorized correctly.
+    ///
     /// See the [SQL for NoSQL Database Guide](https://docs.oracle.com/en/database/other-databases/nosql-database/24.1/sqlfornosql/introduction-sql.html) for details on creating and using queries.
     ///
     /// Note: this request should not be used for DDL statements (those that create or modify tables or indexes, such as `CREATE TABLE`). For DDL statements, use [`TableRequest`](crate::TableRequest) instead.
     ///
-    pub fn new(statement: &str) -> Self {
+    pub fn new(statement: &str, table_name: &str) -> Self {
         QueryRequest {
             statement: Some(statement.to_string()),
+            table_name: table_name.to_string(),
             shard_id: -1,
             ..Default::default()
         }
@@ -209,6 +213,7 @@ impl QueryRequest {
             );
         }
         QueryRequest {
+            table_name: prepared_statement.table_name.clone().unwrap_or_default(),
             prepared_statement: prepared_statement.clone(),
             shard_id: -1,
             topology_info: ti,
@@ -608,11 +613,12 @@ impl QueryRequest {
     fn serialize_internal(&self, w: &mut Writer, timeout: &Duration) -> Result<(), NoSQLError> {
         let mut ns = NsonSerializer::start_request(w);
         ns.start_header();
-        if self.prepare_only {
-            ns.write_header(OpCode::Prepare, timeout, "");
+        let op_code = if self.prepare_only {
+            OpCode::Prepare
         } else {
-            ns.write_header(OpCode::Query, timeout, "");
-        }
+            OpCode::Query
+        };
+        ns.write_header(op_code, timeout, &self.table_name);
         ns.end_header();
         ns.start_payload();
 
