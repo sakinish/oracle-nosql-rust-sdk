@@ -46,7 +46,11 @@ impl AuthenticationProvider for ResourcePrincipalAuthProvider {
         &self.region
     }
     fn key_id(&self) -> String {
-        format!("ST${}", self.token)
+        if self.token.starts_with("ST$") {
+            self.token.clone()
+        } else {
+            format!("ST${}", self.token)
+        }
     }
 }
 
