@@ -261,8 +261,7 @@ impl WriteMultipleRequest {
         ns.start_array(OPERATIONS);
         for rq in self.sub_requests.as_slice() {
             ns.write_subrequest(rq, timeout);
-            // Note: write_subrequest already handles the complete map structure
-            // No need to call end_array_field here as it's handled by the serializer
+            ns.end_array_field(0);
         }
         ns.end_array(OPERATIONS);
 
