@@ -9,11 +9,10 @@ use std::collections::HashMap;
 use crate::auth_common::authentication_provider::AuthenticationProvider;
 use base64ct::{Base64, Encoding};
 use chrono::prelude::*;
-use openssl::pkey::Private;
-use openssl::rsa::Rsa;
-use openssl::sha::Sha256;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Method;
+use rsa::RsaPrivateKey;
+use sha2::{Digest, Sha256};
 use std::error::Error;
 use tracing::trace;
 use url::Url;
@@ -67,7 +66,7 @@ pub fn get_required_headers_ext(
     payload: &str,
     original_headers: HeaderMap,
     url_data: Url,
-    private_key: Rsa<Private>,
+    private_key: RsaPrivateKey,
     key_id: &str,
     query_params: HashMap<String, String>,
     exclude_body: bool,
@@ -130,13 +129,13 @@ pub fn get_required_headers_ext(
 }
 
 fn calculate_body_sha256_hash(body: &str) -> String {
-    let mut sha256 = Sha256::new();
-    sha256.update(body.as_bytes());
-    let body_hash = sha256.finish();
+    let mut hasher = Sha256::new();
+    hasher.update(body.as_bytes());
+    let body_hash = hasher.finalize();
     Base64::encode_string(&body_hash)
 }
 
-fn sign(data_to_sign: String, private_key: Rsa<Private>) -> String {
+fn sign(data_to_sign: String, private_key: RsaPrivateKey) -> String {
     let signature = http_signature::sign(private_key, data_to_sign.as_bytes());
     Base64::encode_string(&signature)
 }

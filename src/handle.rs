@@ -5,7 +5,6 @@
 //  https://oss.oracle.com/licenses/upl/
 //
 use crate::auth_common::authentication_provider::AuthenticationProvider;
-use crate::auth_common::instance_principal_auth_provider::InstancePrincipalAuthProvider;
 use crate::auth_common::resource_principal_auth_provider::ResourcePrincipalAuthProvider;
 use crate::auth_common::signer;
 use crate::handle_builder::AuthConfig;
@@ -74,7 +73,7 @@ impl Handle {
             //builder = builder.cloud_auth_from_file("~/.oci/config")?;
         }
 
-        let mut builder = b.clone();
+        let builder = b.clone();
         // default timeout to 30 seconds
         // TODO: connection timeout vs request timeout
         let timeout = {
@@ -105,24 +104,10 @@ impl Handle {
         // create auth provider if not already created
         match builder.auth_type {
             AuthType::Instance => {
-                let ifp = InstancePrincipalAuthProvider::new_with_client(&c).await?;
-                if builder.region.is_none() {
-                    builder = builder.cloud_region(ifp.region_id())?;
-                }
-                let ap = AuthProvider::Instance {
-                    provider: Box::new(ifp),
-                };
-                builder.auth = Arc::new(tokio::sync::Mutex::new(AuthConfig { provider: ap }));
+                return ia_err!("InstancePrincipalAuthProvider has been removed in this simplified implementation");
             }
             AuthType::Resource => {
-                let rfp = ResourcePrincipalAuthProvider::new()?;
-                if builder.region.is_none() {
-                    builder = builder.cloud_region(rfp.region_id())?;
-                }
-                let ap = AuthProvider::Resource {
-                    provider: Box::new(rfp),
-                };
-                builder.auth = Arc::new(tokio::sync::Mutex::new(AuthConfig { provider: ap }));
+                return ia_err!("ResourcePrincipalAuthProvider::new() has been removed - use new_from_values() instead");
             }
             _ => {}
         }

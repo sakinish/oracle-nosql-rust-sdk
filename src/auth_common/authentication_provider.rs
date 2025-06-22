@@ -4,8 +4,7 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at
 //  https://oss.oracle.com/licenses/upl/
 //
-use openssl::pkey::Private;
-use openssl::rsa::Rsa;
+use rsa::RsaPrivateKey;
 use std::error::Error;
 use std::fmt::Debug;
 
@@ -18,7 +17,7 @@ pub trait AuthenticationProvider: Send + Sync + Debug + AuthenticationProviderCl
     /// Returns the Fingerprint associated with the Private Key of this AuthenticationProvider
     fn fingerprint(&self) -> &str;
     /// Returns the Private Key associated with this AuthenticationProvider
-    fn private_key(&self) -> Result<Rsa<Private>, Box<dyn Error>>;
+    fn private_key(&self) -> Result<RsaPrivateKey, Box<dyn Error>>;
     /// Returns the key id associated with this AuthenticationProvider to be used for signing requests
     fn key_id(&self) -> String {
         let key_id = format!(

@@ -7,7 +7,6 @@
 //! Builder for creating a [`NoSQL Handle`](crate::Handle)
 //!
 
-
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use std::default::Default;
 use std::env;
@@ -16,8 +15,6 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::auth_common::authentication_provider::AuthenticationProvider;
-use crate::auth_common::config_file_authentication_provider::ConfigFileAuthenticationProvider;
-use crate::auth_common::instance_principal_auth_provider::InstancePrincipalAuthProvider;
 use crate::error::{ia_err, NoSQLError};
 use crate::handle::Handle;
 use reqwest::header::HeaderValue;
@@ -59,6 +56,7 @@ pub(crate) struct AuthConfig {
 }
 
 #[derive(Default, Debug)]
+#[allow(dead_code)]
 pub(crate) enum AuthProvider {
     File {
         //path: String,
@@ -86,6 +84,7 @@ pub(crate) enum AuthProvider {
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub(crate) enum AuthType {
     File,
     Instance,
@@ -285,24 +284,12 @@ impl HandleBuilder {
     /// This method allows the use of a file other than the default `~/.oci/config` file.
     /// See [SDK and CLI Configuration File](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm) for details.
     pub fn cloud_auth_from_file_with_profile(
-        mut self,
-        config_file: &str,
-        profile: &str,
+        self,
+        _config_file: &str,
+        _profile: &str,
     ) -> Result<Self, NoSQLError> {
-        let cfp = ConfigFileAuthenticationProvider::new_from_file(config_file, profile)?;
-        if self.region.is_none() && !cfp.region_id().is_empty() {
-            self = self.cloud_region(cfp.region_id())?;
-        }
-        let ap = AuthProvider::File {
-            //path: config_file.to_string(),
-            //profile: profile.to_string(),
-            provider: Box::new(cfp),
-        };
-        self.auth = Arc::new(tokio::sync::Mutex::new(AuthConfig { provider: ap }));
-        self.auth_type = AuthType::File;
-        self.use_https = true;
-        self.mode = HandleMode::Cloud;
-        Ok(self)
+        // Config file authentication provider has been removed in this simplified implementation
+        return ia_err!("ConfigFileAuthenticationProvider has been removed");
     }
     // TODO: cloud_auth_from_session
     /// Specify using OCI Instance Principal for authentication.
@@ -492,12 +479,8 @@ impl HandleBuilder {
         let mut pguard = self.auth.lock().await;
         match &mut pguard.provider {
             AuthProvider::Instance { provider: _ } => {
-                // create an entirely new IP auth, as currently IP Auth has no methods to refresh itself
-                let ifp = InstancePrincipalAuthProvider::new().await?;
-                pguard.provider = AuthProvider::Instance {
-                    provider: Box::new(ifp),
-                };
-                return Ok(true);
+                // InstancePrincipalAuthProvider has been removed in this simplified implementation
+                return ia_err!("InstancePrincipalAuthProvider has been removed");
             }
             AuthProvider::Onprem { provider } => {
                 if let Some(prov) = provider {

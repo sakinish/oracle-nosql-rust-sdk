@@ -4,15 +4,17 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at
 //  https://oss.oracle.com/licenses/upl/
 //
-use openssl::pkey::Private;
-use openssl::rsa::Rsa;
+use rsa::{
+    pkcs8::{DecodePrivateKey, EncodePrivateKey},
+    RsaPrivateKey,
+};
 use std::error::Error;
 use std::fmt::Debug;
 
 use crate::auth_common::file_utils::expand_user_home;
 
 pub trait Supplier: Send + Sync + Debug + SupplierClone {
-    fn get_key(&self) -> Result<Rsa<Private>, Box<dyn Error>>;
+    fn get_key(&self) -> Result<RsaPrivateKey, Box<dyn Error>>;
 }
 
 pub trait SupplierClone {
@@ -59,17 +61,14 @@ impl PrivateKeySupplier {
 }
 
 impl Supplier for PrivateKeySupplier {
-    fn get_key(&self) -> Result<Rsa<Private>, Box<dyn Error>> {
-        match self.passphrase.as_ref() {
-            Some(pass) => {
-                let pass_bytes = pass.iter().map(|c| *c as u8).collect::<Vec<_>>();
-                Ok(Rsa::private_key_from_pem_passphrase(
-                    self.key_content.as_bytes(),
-                    &pass_bytes,
-                )?)
-            }
-            None => Ok(Rsa::private_key_from_pem(self.key_content.as_bytes())?),
+    fn get_key(&self) -> Result<RsaPrivateKey, Box<dyn Error>> {
+        if self.passphrase.is_some() {
+            return Err(
+                "Passphrase-protected keys are not supported in this simplified implementation"
+                    .into(),
+            );
         }
+        Ok(RsaPrivateKey::from_pkcs8_pem(&self.key_content)?)
     }
 }
 
@@ -80,6 +79,7 @@ pub struct FilePrivateKeySupplier {
 }
 
 impl FilePrivateKeySupplier {
+    #[allow(dead_code)]
     pub fn new(key_path: String) -> Self {
         FilePrivateKeySupplier {
             key_path,
@@ -87,6 +87,7 @@ impl FilePrivateKeySupplier {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_with_passphrase(key_path: String, passphrase: Option<Vec<char>>) -> Self {
         FilePrivateKeySupplier {
             key_path,
@@ -96,7 +97,7 @@ impl FilePrivateKeySupplier {
 }
 
 impl Supplier for FilePrivateKeySupplier {
-    fn get_key(&self) -> Result<Rsa<Private>, Box<dyn Error>> {
+    fn get_key(&self) -> Result<RsaPrivateKey, Box<dyn Error>> {
         // TODO: cache key in memory, don't go to disk for every request
         let key_content = match std::fs::read_to_string(&expand_user_home(&self.key_path)) {
             Ok(kc) => kc,
@@ -110,22 +111,20 @@ impl Supplier for FilePrivateKeySupplier {
                 .into());
             }
         };
-        match self.passphrase.as_ref() {
-            Some(pass) => {
-                let pass_bytes = pass.iter().map(|c| *c as u8).collect::<Vec<_>>();
-                Ok(Rsa::private_key_from_pem_passphrase(
-                    key_content.as_bytes(),
-                    &pass_bytes,
-                )?)
-            }
-            None => Ok(Rsa::private_key_from_pem(key_content.as_bytes())?),
+        if self.passphrase.is_some() {
+            return Err(
+                "Passphrase-protected keys are not supported in this simplified implementation"
+                    .into(),
+            );
         }
+        Ok(RsaPrivateKey::from_pkcs8_pem(&key_content)?)
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use rsa::RsaPrivateKey;
 
     #[test]
     #[should_panic]
@@ -144,15 +143,8 @@ mod test {
     #[test]
     #[should_panic]
     fn test_private_key_with_invalid_passphrase() {
-        let rsa = Rsa::generate(4096).unwrap();
-        let private_key_bytes = rsa
-            .private_key_to_pem_passphrase(
-                openssl::symm::Cipher::aes_256_cbc(),
-                "some_passphrase".as_bytes(),
-            )
-            .expect("Error generating Private key with passphrase");
         let private_key_supplier = PrivateKeySupplier::new_with_passphrase(
-            String::from_utf8(private_key_bytes).expect("Invalid key"),
+            String::from("some key content"),
             Some("Invalid passphrase".chars().collect::<Vec<_>>()),
         );
         private_key_supplier.get_key().unwrap();
@@ -160,17 +152,13 @@ mod test {
 
     #[test]
     fn test_private_key_with_valid_passphrase() {
-        let rsa = Rsa::generate(4096).unwrap();
-        let private_key_bytes = rsa
-            .private_key_to_pem_passphrase(
-                openssl::symm::Cipher::aes_256_cbc(),
-                "some_passphrase".as_bytes(),
-            )
-            .expect("Error generating Private key with passphrase");
-        let private_key_supplier = PrivateKeySupplier::new_with_passphrase(
-            String::from_utf8(private_key_bytes).expect("Invalid key"),
-            Some("some_passphrase".chars().collect::<Vec<_>>()),
-        );
+        // This test is simplified since we no longer support passphrases
+        let mut rng = rand::thread_rng();
+        let bits = 2048;
+        let rsa = RsaPrivateKey::new(&mut rng, bits).unwrap();
+        let key_pem = rsa.to_pkcs8_pem(rsa::pkcs8::LineEnding::LF).unwrap();
+
+        let private_key_supplier = PrivateKeySupplier::new(key_pem.to_string());
         private_key_supplier.get_key().unwrap();
     }
 }
