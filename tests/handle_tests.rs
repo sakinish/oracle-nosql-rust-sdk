@@ -101,11 +101,12 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
     }
 
     // Insert with named bind variables
-    let query_request = QueryRequest::new(
+    let prep_result = QueryRequest::new(
         "declare $id integer; $name string; insert into testusers(id, name) values($id, $name)",
-        "testusers",
-    );
-    let prep_result = query_request.prepare_only().execute(&handle).await?;
+    )
+    .prepare_only()
+    .execute(&handle)
+    .await?;
     let data = vec!["jane", "john", "jasper"];
     let mut qreq = QueryRequest::new_prepared(&prep_result.prepared_statement());
     for i in 0..data.len() {
@@ -117,11 +118,10 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
     }
 
     // Insert with positional bind variables
-    let prep1_result =
-        QueryRequest::new("insert into testusers(id, name) values(?, ?)", "testusers")
-            .prepare_only()
-            .execute(&handle)
-            .await?;
+    let prep1_result = QueryRequest::new("insert into testusers(id, name) values(?, ?)")
+        .prepare_only()
+        .execute(&handle)
+        .await?;
     let data = vec!["jane", "john", "jasper"];
     let mut qreq1 = QueryRequest::new_prepared(&prep1_result.prepared_statement());
     for i in 0..data.len() {
@@ -135,7 +135,7 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
     // Run a small variety of queries. Note that the QTF tests do an exhaustive set of
     // queries, so this doesn't need to cover a lot. THis is just to see that the base
     // system is functioning properly.
-    let qres = QueryRequest::new("select * from testusers", "testusers")
+    let qres = QueryRequest::new("select * from testusers")
         .execute(&handle)
         .await?;
     println!("QueryResult: rows={} res={:?}", qres.rows().len(), qres);
@@ -145,7 +145,7 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
             .into());
     }
 
-    let qres1 = QueryRequest::new("select * from testusers order by id", "testusers")
+    let qres1 = QueryRequest::new("select * from testusers order by id")
         .execute(&handle)
         .await?;
     println!("QueryResult1: rows={} res={:?}", qres1.rows().len(), qres1);
@@ -155,10 +155,7 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
             .into());
     }
 
-    let mut qreq2 = QueryRequest::new(
-        "select id, name, created from testusers order by name",
-        "testusers",
-    );
+    let mut qreq2 = QueryRequest::new("select id, name, created from testusers order by name");
     let qres2 = qreq2.execute(&handle).await?;
     //println!("QueryRequest2 = {:?}", qreq2);
     println!("QueryResult2: rows={} res={:?}", qres2.rows().len(), qres2);
@@ -168,10 +165,7 @@ async fn smoke_test() -> Result<(), Box<dyn Error>> {
             .into());
     }
 
-    let mut qreq3 = QueryRequest::new(
-        "select sum(id), name from testusers group by name",
-        "testusers",
-    );
+    let mut qreq3 = QueryRequest::new("select sum(id), name from testusers group by name");
     let qres3 = qreq3.execute(&handle).await?;
     //println!("QueryRequest3 = {:?}", qreq3);
     println!("QueryResult3: rows={} res={:?}", qres3.rows().len(), qres3);
