@@ -391,6 +391,11 @@ impl QueryRequest {
             // purposefully not copying registers
             num_registers: -1,
             timeout: self.timeout.clone(),
+            // CRITICAL FIX: Copy compartment_id and other essential fields for cross-tenancy support
+            compartment_id: self.compartment_id.clone(),
+            max_read_kb: self.max_read_kb,
+            max_write_kb: self.max_write_kb,
+            consistency: self.consistency.clone(),
             ..Default::default()
         }
     }
